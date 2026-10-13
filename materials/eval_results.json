@@ -1,0 +1,96 @@
+{
+  "classes": [
+    "alexandrium",
+    "chaetoceros",
+    "karenia",
+    "noctiluca",
+    "prorocentrum",
+    "pseudonitzschia",
+    "skeletonema"
+  ],
+  "cn": {
+    "alexandrium": "亚历山大藻属",
+    "chaetoceros": "角毛藻属",
+    "karenia": "凯伦藻属",
+    "noctiluca": "夜光藻",
+    "prorocentrum": "原甲藻属",
+    "pseudonitzschia": "拟菱形藻属",
+    "skeletonema": "骨条藻属"
+  },
+  "per_class_acc": {
+    "alexandrium": 0.8333,
+    "chaetoceros": 0.9429,
+    "karenia": 0.8,
+    "noctiluca": 1.0,
+    "prorocentrum": 0.95,
+    "pseudonitzschia": 1.0,
+    "skeletonema": 0.875
+  },
+  "overall_val_acc": 0.9539,
+  "confusion": [
+    [
+      5,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      33,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    [
+      0,
+      0,
+      4,
+      1,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      34,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      2,
+      0,
+      0,
+      38,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      24,
+      0
+    ],
+    [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      7
+    ]
+  ],
+  "best_epoch_acc": 0.9539
+}

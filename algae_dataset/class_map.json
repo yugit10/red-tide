@@ -1,0 +1,100 @@
+{
+  "classes": [
+    "alexandrium",
+    "chaetoceros",
+    "karenia",
+    "noctiluca",
+    "prorocentrum",
+    "pseudonitzschia",
+    "skeletonema"
+  ],
+  "meta": {
+    "alexandrium": {
+      "cn": "亚历山大藻属",
+      "sci": "Alexandrium (代表种:塔玛亚历山大藻 A. tamarense)"
+    },
+    "chaetoceros": {
+      "cn": "角毛藻属",
+      "sci": "Chaetoceros (代表种:旋链角毛藻 C. curvisetus)"
+    },
+    "karenia": {
+      "cn": "凯伦藻属",
+      "sci": "Karenia (代表种:米氏凯伦藻 K. mikimotoi)"
+    },
+    "noctiluca": {
+      "cn": "夜光藻",
+      "sci": "Noctiluca scintillans"
+    },
+    "prorocentrum": {
+      "cn": "原甲藻属",
+      "sci": "Prorocentrum (代表种:东海原甲藻 P. donghaiense)"
+    },
+    "pseudonitzschia": {
+      "cn": "拟菱形藻属",
+      "sci": "Pseudo-nitzschia (代表种:尖刺拟菱形藻 P. pungens)"
+    },
+    "skeletonema": {
+      "cn": "骨条藻属",
+      "sci": "Skeletonema (代表种:中肋骨条藻 S. costatum)"
+    }
+  },
+  "size": 224,
+  "summary": {
+    "noctiluca": {
+      "cn_display": "夜光藻",
+      "sci": "Noctiluca scintillans",
+      "raw": 171,
+      "dedup": 171,
+      "train": 137,
+      "val": 34
+    },
+    "prorocentrum": {
+      "cn_display": "原甲藻属",
+      "sci": "Prorocentrum (代表种:东海原甲藻 P. donghaiense)",
+      "raw": 199,
+      "dedup": 198,
+      "train": 158,
+      "val": 40
+    },
+    "chaetoceros": {
+      "cn_display": "角毛藻属",
+      "sci": "Chaetoceros (代表种:旋链角毛藻 C. curvisetus)",
+      "raw": 177,
+      "dedup": 177,
+      "train": 142,
+      "val": 35
+    },
+    "pseudonitzschia": {
+      "cn_display": "拟菱形藻属",
+      "sci": "Pseudo-nitzschia (代表种:尖刺拟菱形藻 P. pungens)",
+      "raw": 120,
+      "dedup": 120,
+      "train": 96,
+      "val": 24
+    },
+    "skeletonema": {
+      "cn_display": "骨条藻属",
+      "sci": "Skeletonema (代表种:中肋骨条藻 S. costatum)",
+      "raw": 40,
+      "dedup": 40,
+      "train": 32,
+      "val": 8
+    },
+    "alexandrium": {
+      "cn_display": "亚历山大藻属",
+      "sci": "Alexandrium (代表种:塔玛亚历山大藻 A. tamarense)",
+      "raw": 28,
+      "dedup": 28,
+      "train": 22,
+      "val": 6
+    },
+    "karenia": {
+      "cn_display": "凯伦藻属",
+      "sci": "Karenia (代表种:米氏凯伦藻 K. mikimotoi)",
+      "raw": 25,
+      "dedup": 25,
+      "train": 20,
+      "val": 5
+    }
+  }
+}
