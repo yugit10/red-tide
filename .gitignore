@@ -1,0 +1,41 @@
+# ===== 依赖与缓存 =====
+__pycache__/
+*.py[cod]
+*.log
+.venv/
+venv/
+
+# ===== 编辑器 / 办公锁文件 =====
+~$*
+*.tmp
+.DS_Store
+Thumbs.db
+
+# ===== 本地私密配置(不入库) =====
+.env
+.env.*
+*.pem
+*secret*
+*credential*
+
+# ===== 大文件: 原始/派生数据集图像(保留溯源csv与class_map.json) =====
+dataset_raw/**/*.jpg
+dataset_raw/**/*.jpeg
+dataset_raw/**/*.png
+dataset_raw/**/*.gif
+dataset_raw/**/*.bmp
+dataset_raw/**/*.webp
+dataset_raw/**/*.tif
+dataset_raw/**/*.tiff
+algae_dataset/**/*.jpg
+algae_dataset/**/*.jpeg
+algae_dataset/**/*.png
+algae_dataset/**/*.gif
+
+# ===== 构建产物: 模型权重(保留train_log.json) =====
+*.ckpt
+
+# ===== 提交包: zip 与内嵌数据集/模型(保留源码与文档) =====
+submission/*.zip
+submission/stage/数据集/
+submission/stage/模型/
