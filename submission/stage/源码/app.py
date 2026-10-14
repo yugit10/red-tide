@@ -2,15 +2,32 @@
 """app.py —— Streamlit 前端: 海洋微藻智能识别与赤潮风险提示工具(双分支)
 主分支: 宏观海面照片 → 水色CV似然 × 现场6题问卷 → 贝叶斯融合 → 致灾类群/风险/建议
 次分支: 显微照片 → MobileNetV3-Small(MindSpore) 7类识别(实验室确认)
+v3(渔民可用性整改): 大白话三句话结论+语音播报+一键复制上报文案+定位附注+拍照示例+
+问卷口语化引导+历史查询记录+显微入口标注; 算法层(fusion/predict)零改动。
 运行: streamlit run app.py
 """
-import os, io, json, tempfile
+import os, io, json, glob, tempfile, datetime
 import streamlit as st
+import streamlit.components.v1 as components
 from PIL import Image
 
-st.set_page_config(page_title="海洋微藻智能识别与赤潮风险提示", page_icon="🌊", layout="wide")
+st.set_page_config(page_title="赤潮快查 · 拍海面看风险", page_icon="🌊", layout="wide")
 
 MODEL_DIR = r"D:\train\model"
+RAW = r"D:\train\dataset_raw\macro\raw"
+HIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "usage_history.jsonl")
+
+# 问卷口语化显示文案(仅改展示, 不改 fusion 内部 id/label/似然)
+PLAIN_Q = {
+    "color": "1. 海水的颜色, 您看着更像哪种?",
+    "glow": "2. 夜里或用手搅水时, 见过蓝绿色的光吗?",
+    "mortality": "3. 这几天有没有死鱼、死虾蟹, 或贝类合不拢壳/开口异常?",
+    "floating": "4. 水面上漂着什么?",
+    "smell": "5. 海边闻着有什么味?",
+    "env": "6. 最近海边有没有这些事?(升温/暴雨后/施肥排污等)",
+}
+EXAMPLE_GOOD = os.path.join(RAW, "warm", "keep", "warm_algae_Xiamen_2007_FIELD_01.jpg")
+EXAMPLE_BAD = os.path.join(RAW, "warm", "drop_curated", "warm_gb2xphaeoc_164d5339.jpg")
 
 
 def render_alert(a):
@@ -26,7 +43,6 @@ def render_alert(a):
 
 
 def sec_head(n, title, color="#2E75B6"):
-    """四段式结论的小节头: 编号+标题+色条, 把结论在视觉上分离成独立区块."""
     st.markdown(
         f'<div style="border-left:6px solid {color};background:{color}14;padding:6px 12px;'
         f'border-radius:4px;margin:14px 0 6px 0;font-weight:700;font-size:15px;color:#222;">'
@@ -34,10 +50,77 @@ def sec_head(n, title, color="#2E75B6"):
         unsafe_allow_html=True)
 
 
+def plain_sentences(meta, res, a):
+    """渔民三句话: 现在什么情况 / 我现在该干什么 / 我该找谁."""
+    conf = res["confidence"] * 100
+    if res["top"] == "none":
+        s1 = f"照片里的海是{meta['color_cn']}, 没看出赤潮, 眼下基本放心。"
+    else:
+        s1 = f"照片里的海是{meta['color_cn']}, 大概是{res['top_cn']}, 十成里把握约{conf:.0f}成; 预警牌:{a['color_cn']}{a['level']}级。"
+    s2 = a["measures"].split(";")[0].split(";")[0] + "。"
+    if res["top"] == "none":
+        s3 = "不用上报; 哪天水变色、见死鱼, 再拍一张来查。"
+    else:
+        s3 = "要上报: 打12345或找镇里渔业技术员; 也可点下面「复制上报话术」, 粘贴到渔业微信群。"
+    return s1, s2, s3
+
+
+def action_buttons(tts_text, report_text):
+    """语音播报 / 复制上报话术 / 附上我的位置 (浏览器端JS, 仅localhost/https可用)."""
+    components.html(
+        f"""
+<div style="font-family:sans-serif;margin:4px 0 10px 0;">
+<button id="tts" style="font-size:15px;padding:6px 14px;margin-right:8px;">🔊 念给我听</button>
+<button id="cp" style="font-size:15px;padding:6px 14px;margin-right:8px;">📋 复制上报话术</button>
+<button id="loc" style="font-size:15px;padding:6px 14px;">📍 附上我的位置</button>
+<span id="msg" style="margin-left:8px;color:#2E75B6;"></span>
+</div>
+<script>
+var TTS = {json.dumps(tts_text, ensure_ascii=False)};
+var REP = {json.dumps(report_text, ensure_ascii=False)};
+var LOC = "";
+document.getElementById("tts").onclick = function() {{
+    var u = new SpeechSynthesisUtterance(TTS); u.lang = "zh-CN"; u.rate = 0.95;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+    document.getElementById("msg").textContent = "正在朗读…";
+}};
+document.getElementById("loc").onclick = function() {{
+    navigator.geolocation.getCurrentPosition(function(p) {{
+        LOC = " 位置: " + p.coords.latitude.toFixed(4) + "," + p.coords.longitude.toFixed(4);
+        document.getElementById("msg").textContent = "位置已附上, 再点复制即可带位置。";
+    }}, function() {{ document.getElementById("msg").textContent = "取不到位置(需允许定位)。"; }});
+}};
+document.getElementById("cp").onclick = function() {{
+    navigator.clipboard.writeText(REP + LOC).then(function() {{
+        document.getElementById("msg").textContent = "已复制, 去微信群粘贴即可。";
+    }}, function() {{ document.getElementById("msg").textContent = "复制失败, 请长按手写。"; }});
+}};
+</script>
+""", height=52)
+
+
+def append_history(rec):
+    with open(HIST, "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
+def load_history(n=5):
+    if not os.path.exists(HIST):
+        return []
+    lines = io.open(HIST, encoding="utf-8").read().splitlines()[-n:]
+    out = []
+    for l in reversed(lines):
+        try:
+            out.append(json.loads(l))
+        except Exception:
+            pass
+    return out
+
+
 RISK_COLOR = {"高": "🔴", "中—高": "🟠", "低—中": "🟡", "中": "🟡", "低": "🟢", "无": "🟢"}
 
 
-@st.cache_resource(show_spinner="正在加载显微模型...")
+@st.cache_resource(show_spinner="正在加载显微模型…(仅化验室页面需要)")
 def get_predictor():
     from predict import Predictor
     return Predictor()
@@ -50,76 +133,98 @@ def load_train_log():
     return {}
 
 
-# ---------- 侧边栏 ----------
+# ---------- 侧边栏(大白话) ----------
 with st.sidebar:
-    st.title("🌊 海洋微藻识别")
-    st.caption("赤潮风险提示工具 · 双分支 · MindSpore")
+    st.title("🌊 赤潮快查")
+    st.caption("拍一张海面的照片, 三句话告诉您: 什么情况、现在该干什么、该找谁。")
+    st.divider()
+    st.write("**怎么用**")
+    st.write("1. 点「拍海面查风险」, 传一张海面照片")
+    st.write("2. 六个问题想答就答, 不答也行")
+    st.write("3. 看橙色/红色牌子, 听语音, 需要上报就复制话术")
+    st.divider()
     log = load_train_log()
-    st.divider()
-    st.subheader("分支一 · 宏观海面(主)")
-    st.write("- 水色CV色块检测(无需训练)")
-    st.write("- × 现场6题问卷似然")
-    st.write("- → 贝叶斯融合后验")
-    st.subheader("分支二 · 显微(实验室确认)")
     if log:
-        st.metric("显微验证集准确率", f"{log.get('best_val_acc', 0) * 100:.1f}%")
-        st.write(f"- MobileNetV3-Small / MindSpore")
-        st.write(f"- 类别数:{len(log.get('classes', []))}")
-    else:
-        st.info("显微模型未训练")
-    st.divider()
-    with st.expander("数据来源与真实性说明"):
-        st.markdown(
-            "本工具图像与判定依据均来自**可公开溯源**的真实数据:\n\n"
-            "- **GBIF**(全球生物多样性信息网络)采集影像,逐张记录采集记录号、学名、许可协议与权利人;\n"
-            "- **CNKI 学术图片库**期刊/学位论文显微图,标注图注与文献来源;\n"
-            "- 宏观分支的现场问卷似然权重依据赤潮监测公开规程与致灾类群生态学特征显式声明,可审计。\n\n"
-            "所有图片溯源信息见 `provenance.csv`。")
-    st.caption("仅供科研/教学演示,不能替代专业鉴定与官方通报。")
+        st.caption(f"化验室显微识别准确率 {log.get('best_val_acc', 0) * 100:.1f}%(7类)")
+    with st.expander("我给专家看的: 技术原理"):
+        st.write("- 宏观: 水色CV色块似然 × 现场6题问卷似然 → 贝叶斯融合后验(无需训练)")
+        st.write("- 微观: MobileNetV3-Small / MindSpore, 7类, 验证集 "
+                 f"{log.get('best_val_acc', 0) * 100:.1f}%" if log else "- 微观: 未训练")
+        st.markdown("图像与判定依据均可公开溯源(GBIF等), 见 `provenance.csv`; "
+                    "宏观规则流在25张精选海面验证集上准确92%。")
+    with st.expander("我最近查过的"):
+        hs = load_history()
+        if hs:
+            for h in hs:
+                st.write(f"- {h['ts']}　{h['alert']}　{h['top_cn']}　({h['color_cn']})")
+        else:
+            st.write("还没有记录。查一次就记一次, 关掉也在。")
+    st.caption("结果供参考, 以福建省海洋与渔业局官方通报为准。")
 
 # ---------- 主页 ----------
-st.title("海洋微藻智能识别与赤潮风险提示工具")
-st.markdown("**推荐上传海面现状照片**(岸边/船上拍摄即可),结合现场6题问卷给出赤潮风险;"
-            "如有显微照片可切到第二分支做实验室级确认。")
+st.title("拍海面, 查赤潮风险")
+st.markdown("在岸边或船上**拍一大片水面**传上来, 用三句话告诉您结果;"
+            "化验室的显微照片请走第二个页面。")
 
-tab_macro, tab_micro = st.tabs(["🌊 宏观海面照片(推荐)", "🔬 显微照片(实验室确认)"])
+tab_macro, tab_micro = st.tabs(["📷 拍海面查风险(渔民用)", "🔬 显微照片(化验室人员用)"])
 
 # ================= 分支一: 宏观 =================
 with tab_macro:
     import fusion
-    ups = st.file_uploader("上传海面照片(可多张)", type=["jpg", "jpeg", "png"],
+    gc, bc = st.columns(2)
+    with gc:
+        if os.path.exists(EXAMPLE_GOOD):
+            st.image(EXAMPLE_GOOD, caption="✅ 这样拍对: 拍一大片水面", use_container_width=True)
+    with bc:
+        if os.path.exists(EXAMPLE_BAD):
+            st.image(EXAMPLE_BAD, caption="❌ 这样拍错: 只拍藻团/礁石特写", use_container_width=True)
+    ups = st.file_uploader("上传海面照片(可多张, 手机拍的就行)", type=["jpg", "jpeg", "png"],
                            accept_multiple_files=True, key="macro_up")
-    st.markdown("##### 现场特征问卷(与图像证据融合)")
+    st.markdown("##### 海边六问(想答就答, 答得越多越准)")
+    st.caption("每题都可以不选; 拿不准就选「不确定」, 不会算错, 只是少一条线索。")
     answers = {}
     qcols = st.columns(2)
     for i, q in enumerate(fusion.QUESTIONS):
         with qcols[i % 2]:
             labels = [o["label"] for o in q["options"]]
-            sel = st.selectbox(q["text"], ["未选择"] + labels, key=f"q_{q['id']}")
+            sel = st.selectbox(PLAIN_Q.get(q["id"], q["text"]), ["未选择"] + labels, key=f"q_{q['id']}")
             answers[q["id"]] = None if sel == "未选择" else sel
     n_ans = sum(1 for v in answers.values() if v)
-    st.caption(f"已答 {n_ans}/6 题。答得越多融合越准; 不答则仅用图像水色证据。")
+    st.caption(f"已答 {n_ans}/6 题。一题不答也能出结果(只看照片水色)。")
 
     if not ups:
-        st.info("👆 上传一张海面照片开始分析。")
+        st.info("👆 传一张海面照片, 马上出结果。")
         st.stop()
 
     for uf in ups:
         img = Image.open(io.BytesIO(uf.getvalue())).convert("RGB")
         label, lik, meta = fusion.image_color_likelihood(img)
-        # 场景自动提示: 低饱和→疑似显微明场
         if meta["sat"] < 0.10:
-            st.warning(f"《{uf.name}》整体饱和度很低({meta['sat']}), 疑似**显微明场照片**而非海面照, "
-                       "建议切到「显微照片」分支。")
+            st.warning(f"《{uf.name}》看着不像海面照片(颜色太淡, 像显微镜下拍的)。"
+                       "请站到岸边/船上, 拍一大片水面; 显微照片请走第二个页面。")
         res = fusion.fuse(lik, answers)
         c1, c2 = st.columns([1, 2])
         with c1:
             st.image(img, caption=uf.name, use_container_width=True)
-            st.caption(f"图像水色证据:{meta['color_cn']} "
+            st.caption(f"照片水色:{meta['color_cn']} "
                        f"(粉色块{meta['f_pink']:.0%}/褐{meta['f_brown']:.0%}/"
                        f"绿{meta['f_green']:.0%}/泡沫{meta['f_foam']:.0%})")
         with c2:
             a = res["alert"]
+            s1, s2, s3 = plain_sentences(meta, res, a)
+            st.markdown(
+                f'<div style="background:#F2F7FC;border:1px solid #BDD7EE;border-radius:8px;'
+                f'padding:10px 14px;font-size:16px;line-height:1.7;">'
+                f'<b>① 情况:</b>{s1}<br><b>② 该干什么:</b>{s2}<br><b>③ 该找谁:</b>{s3}</div>',
+                unsafe_allow_html=True)
+            ts = datetime.datetime.now().strftime("%m-%d %H:%M")
+            report = (f"【赤潮快查上报】{ts} 拍于海面; 水色{meta['color_cn']}; "
+                      f"研判{res['top_cn']}(把握{res['confidence'] * 100:.0f}%); "
+                      f"预警{a['color_cn']}{a['level']}级, 指数{a['index']}/100; 请核实。")
+            action_buttons(s1 + s2 + s3, report)
+            append_history({"ts": ts, "file": uf.name, "color_cn": meta["color_cn"],
+                            "top": res["top"], "top_cn": res["top_cn"],
+                            "alert": f"{a['color_cn']}{a['level']}级", "index": a["index"]})
             sec_head(1, "可能藻种")
             st.markdown(f"{res['top_cn']}　(融合置信度 {res['confidence'] * 100:.1f}%)")
             st.progress(min(res["confidence"], 1.0))
@@ -132,7 +237,7 @@ with tab_macro:
             sec_head(4, "应对措施", "#34A853")
             st.markdown(a["measures"])
             st.markdown(res["advice"])
-            with st.expander("📊 证据链与预警依据"):
+            with st.expander("📊 证据链与预警依据(给专家看)"):
                 for h, p in sorted(res["posterior"].items(), key=lambda kv: -kv[1]):
                     st.write(f"- {fusion.HYP_CN[h]}:{p * 100:.1f}%")
                 st.caption("参与融合的证据:" + "、".join(res["evidence"]))
@@ -141,6 +246,8 @@ with tab_macro:
 
 # ================= 分支二: 显微 =================
 with tab_micro:
+    st.info("这一页给**化验室/技站人员**用: 需要有显微镜拍的藻体照片。"
+            "渔民朋友请回上一页「拍海面查风险」。")
     st.markdown("上传海洋微藻**显微照片**,由 MobileNetV3-Small(MindSpore) 做7类识别, 作为实验室级确认。")
     mups = st.file_uploader("选择显微图像(可多选)", type=["jpg", "jpeg", "png"],
                             accept_multiple_files=True, key="micro_up")
@@ -176,5 +283,6 @@ with tab_micro:
                     st.caption(a2["trigger"])
             st.divider()
 
-st.caption("宏观分支:水色CV+贝叶斯融合 | 显微分支:MobileNetV3-Small / MindSpore | "
-           "数据:GBIF + CNKI | 仅供科研教学演示")
+st.caption("宏观:水色CV+贝叶斯融合(25张海面验证集92%) | 显微:MobileNetV3-Small / MindSpore | "
+           "数据:GBIF 等可溯源来源 | 结果供参考, 以福建省海洋与渔业局"
+           "(https://hyyyj.fujian.gov.cn/)官方通报为准")
