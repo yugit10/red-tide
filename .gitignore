@@ -39,3 +39,4 @@ algae_dataset/**/*.gif
 submission/*.zip
 submission/stage/数据集/
 submission/stage/模型/
+tools/usage_history.jsonl
