@@ -1,0 +1,39 @@
+{
+  "classes": [
+    "diatom",
+    "green_tide",
+    "noctiluca",
+    "none",
+    "toxic_dino"
+  ],
+  "HYP_CN": {
+    "diatom": "硅藻型水华",
+    "green_tide": "绿潮/绿藻水华",
+    "noctiluca": "夜光藻型水华",
+    "none": "无明显赤潮",
+    "toxic_dino": "有毒甲藻型"
+  },
+  "note": "宏观5类训练集: 搜索引擎公开图经规则流水色CV伪标签(透明披露)。monitor=同源伪标签仅监控训练; 准确率验证以人工精选真实图(warm/normal/green)为口径。",
+  "summary": {
+    "diatom": {
+      "train": 275,
+      "monitor": 30
+    },
+    "green_tide": {
+      "train": 810,
+      "monitor": 90
+    },
+    "noctiluca": {
+      "train": 628,
+      "monitor": 69
+    },
+    "none": {
+      "train": 810,
+      "monitor": 90
+    },
+    "toxic_dino": {
+      "train": 237,
+      "monitor": 26
+    }
+  }
+}

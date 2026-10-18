@@ -1,0 +1,67 @@
+{
+  "classes": [
+    "diatom",
+    "green_tide",
+    "noctiluca",
+    "none",
+    "toxic_dino"
+  ],
+  "best_monitor_acc": 0.7541,
+  "note": "best 按 monitor(伪标签监控集)选择; 真实准确率见 eval_macro_real.py 的人工精选验证",
+  "epochs": 10,
+  "lr": 0.002,
+  "bs": 32,
+  "elapsed_sec": 501.0,
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 0.9578872292206205,
+      "monitor_acc": 0.741
+    },
+    {
+      "epoch": 2,
+      "loss": 0.7032986649836617,
+      "monitor_acc": 0.718
+    },
+    {
+      "epoch": 3,
+      "loss": 0.6255951993081762,
+      "monitor_acc": 0.718
+    },
+    {
+      "epoch": 4,
+      "loss": 0.5300934366111097,
+      "monitor_acc": 0.7148
+    },
+    {
+      "epoch": 5,
+      "loss": 0.4760614304706968,
+      "monitor_acc": 0.7344
+    },
+    {
+      "epoch": 6,
+      "loss": 0.43904823064804077,
+      "monitor_acc": 0.7344
+    },
+    {
+      "epoch": 7,
+      "loss": 0.372365841577793,
+      "monitor_acc": 0.7541
+    },
+    {
+      "epoch": 8,
+      "loss": 0.3334991579939579,
+      "monitor_acc": 0.7246
+    },
+    {
+      "epoch": 9,
+      "loss": 0.29212909440199536,
+      "monitor_acc": 0.7377
+    },
+    {
+      "epoch": 10,
+      "loss": 0.27407954907280274,
+      "monitor_acc": 0.7246
+    }
+  ]
+}

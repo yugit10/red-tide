@@ -1,9 +1,151 @@
 # -*- coding: utf-8 -*-
-"""贝叶斯融合引擎: 宏观海面图像水色似然 × 现场6题问卷似然 → 后验(致灾类群/风险/建议).
-透明可解释: 每个选项对假设集的似然权重显式声明, 可写入设计文档."""
+"""贝叶斯融合引擎: 宏观海面图像双证据(规则流水色CV × 宏观CNN) → 后验(致灾类群/风险/建议).
+纯图像判定, 无需现场问卷; 规则流为主(可解释), 宏观CNN为辅(第三路证据).
+透明可解释: 各证据对假设集的似然权重显式声明, 可写入设计文档."""
+import os
 import colorsys
 import numpy as np
 from PIL import Image
+
+# 宏观 CNN 懒加载(首次调用时载入, 避免非宏观场景引入 MindSpore 依赖)
+_CNN = {"net": None, "cmap": None, "ok": False}
+
+
+def _load_macro_cnn():
+    """载入宏观5类CNN(MobileNetV3-Small). 失败返回 None(整套融合退化为纯规则流)."""
+    if _CNN["net"] is not None:
+        return _CNN["net"], _CNN["cmap"]
+    try:
+        import json
+        import mindspore as ms
+        from mindcv import create_model
+        cmap = json.load(open(r"D:\train\model_macro\class_map.json", encoding="utf-8"))
+        classes = cmap["classes"]; N = len(classes)
+        net = create_model("mobilenet_v3_small_100", num_classes=N, pretrained=False, in_channels=3)
+        ck = r"D:\train\model_macro\best.ckpt"
+        if os.path.exists(ck):
+            ms.load_param_into_net(net, ms.load_checkpoint(ck))
+            _CNN["net"] = net; _CNN["cmap"] = cmap; _CNN["ok"] = True
+            return net, cmap
+    except Exception:
+        pass
+    return None, None
+
+
+def image_cnn_likelihood(pil_img):
+    """宏观CNN第三路图像证据: softmax(5类) → HYP顺序似然向量.
+    返回 (ok, lik): ok=False 表示CNN未就绪(调用方应退化为纯规则流)."""
+    net, cmap = _load_macro_cnn()
+    if net is None:
+        return False, None
+    try:
+        import mindspore as ms
+        from mindspore import Tensor
+        MEAN = [0.485 * 255, 0.456 * 255, 0.406 * 255]
+        STD = [0.229 * 255, 0.224 * 255, 0.225 * 255]
+        SIZE = 224
+        img = pil_img.convert("RGB").resize((SIZE, SIZE), Image.BILINEAR)
+        a = np.asarray(img).astype(np.float32)
+        for i in range(3):
+            a[..., i] = (a[..., i] - MEAN[i]) / STD[i]
+        x = Tensor(a.transpose(2, 0, 1)[None])
+        logits = net(x).asnumpy()[0]
+        e = np.exp(logits - logits.max())
+        soft = e / e.sum()
+        classes = cmap["classes"]
+        lik = {h: 0.01 for h in HYP}
+        for c, p in zip(classes, soft):
+            lik[c] = float(p) + 0.01  # 平滑下限, 避免0似然
+        return True, lik
+    except Exception:
+        return False, None
+
+
+# ===== 海面/非海面预检 =====
+_PC = {"net": None, "ok": False}
+_PC_PATH = r"D:\train\model_precheck\best.ckpt"
+
+
+def _load_precheck():
+    """载入海面预检二分类CNN. 失败返回 None(回退规则流预检)."""
+    if _PC["net"] is not None:
+        return _PC["net"]
+    try:
+        import mindspore as ms
+        from mindcv import create_model
+        net = create_model("mobilenet_v3_small_100", num_classes=2, pretrained=False, in_channels=3)
+        if os.path.exists(_PC_PATH):
+            ms.load_param_into_net(net, ms.load_checkpoint(_PC_PATH))
+            _PC["net"] = net; _PC["ok"] = True
+            return net
+    except Exception:
+        pass
+    return None
+
+
+def sea_precheck(pil_img):
+    """海面/非海面预检(分层: CNN 为主, 规则流救回临界).
+
+    分层判定(CNN 输出海面概率 sea_prob):
+      - sea_prob < 0.30        -> 非海面(坚决拒绝, 规则流无权翻案)
+      - 0.30 <= sea_prob < 0.60 -> 模棱两可 -> 由规则流决定(救回真实海面近景/浪花)
+      - sea_prob >= 0.60       -> 海面(放行)
+    规则流兜底信号: 青蓝绿占比 f_water + 饱和度 + 颜色多样性(纯色块/低多样性 -> 非海面).
+
+    返回 (is_sea: bool, source: str, score: float, detail: str)
+      source: "cnn" / "rule" / "tie", score = 依据一方的置信(0-1).
+    """
+    sea_prob = None
+    try:
+        net = _load_precheck()
+        if net is not None:
+            import mindspore as ms
+            from mindspore import Tensor
+            MEAN = [0.485 * 255, 0.456 * 255, 0.406 * 255]
+            STD = [0.229 * 255, 0.224 * 255, 0.225 * 255]
+            img = pil_img.convert("RGB").resize((224, 224), Image.BILINEAR)
+            a = np.asarray(img).astype(np.float32)
+            for i in range(3):
+                a[..., i] = (a[..., i] - MEAN[i]) / STD[i]
+            logits = net(Tensor(a.transpose(2, 0, 1)[None])).asnumpy()[0]
+            p = np.exp(logits - logits.max()); p = p / p.sum()
+            sea_prob = float(p[1])  # 类1 = sea (目录字母序 nonsea=0, sea=1)
+    except Exception:
+        sea_prob = None
+    # ---- 规则流兜底 ----
+    img2 = pil_img.convert("RGB")
+    arr = np.asarray(img2.resize((96, 96))).astype(np.float32) / 255.0
+    tot = arr.shape[0] * arr.shape[1]
+    mx = arr.max(2); mn = arr.min(2); df = mx - mn + 1e-8
+    s = np.where(mx > 0, df / (mx + 1e-8), 0)
+    r, g, b = arr[..., 0], arr[..., 1], arr[..., 2]
+    hue = np.zeros_like(mx)
+    m = (mx == r); hue[m] = ((g - b)[m] / df[m]) % 6
+    m = (mx == g) & (mx != r); hue[m] = ((b - r)[m] / df[m]) + 2
+    m = (mx == b) & (mx != r) & (mx != g); hue[m] = ((r - g)[m] / df[m]) + 4
+    hue = hue * 60.0
+    water_m = (((hue >= 150) & (hue <= 270)) | ((hue >= 50) & (hue < 150)))
+    s_water = water_m & (s > 0.08) & (mx > 0.10)
+    f_water = float(s_water.sum()) / tot
+    mean_s = float(s.mean())
+    q = np.asarray(img2.resize((48, 48))).astype(np.uint8) >> 5
+    ncol = len(np.unique(q.reshape(-1, 3), axis=0))
+    rule_is_sea = (f_water >= 0.45 and mean_s > 0.08 and ncol >= 12)
+    rule_detail = f"f_water={f_water:.2f} sat={mean_s:.2f} ncol={ncol}"
+
+    if sea_prob is None:
+        # 模型未就绪 -> 纯规则流
+        return rule_is_sea, "rule", round(min(1.0, f_water), 3), rule_detail
+    if sea_prob < 0.30:
+        return False, "cnn", round(sea_prob, 3), f"预检模型(海面概率{sea_prob:.0%}, 坚决拒绝)"
+    if sea_prob >= 0.60:
+        return True, "cnn", round(sea_prob, 3), f"预检模型(海面概率{sea_prob:.0%})"
+    # 模棱两可 0.30-0.60 -> 规则流决定
+    if rule_is_sea:
+        return True, "tie", round(sea_prob, 3), f"模型临界({sea_prob:.0%})+规则流水色(放行)"
+    return False, "tie", round(sea_prob, 3), f"模型临界({sea_prob:.0%})+规则流({rule_detail}, 拒绝)"
+
+
 
 # 假设集 H
 HYP = ["noctiluca", "toxic_dino", "diatom", "green_tide", "none"]
@@ -157,14 +299,32 @@ def image_color_likelihood(pil_img):
     return label, dict(COLOR_LIK[label]), meta
 
 
-def fuse(image_lik=None, answers=None, image_weight=2.0):
-    """answers: {qid: option_label}. 返回后验dict+top+risk+advice."""
+def fuse(image_lik=None, answers=None, image_weight=2.0, cnn_lik=None, cnn_weight=1.0,
+         cnn_mode="agree"):
+    """图像双证据贝叶斯融合(纯图像判定, 问卷可选).
+    image_lik: 规则流水色CV似然(主); cnn_lik: 宏观CNN似然(辅);
+    cnn_mode: "agree"=保守融合(默认): 仅当 CNN 顶类与规则流顶类一致时才计入CNN证据,
+              增强置信度; 不一致时忽略CNN、以规则流为准(保证不低于规则流单独).
+              "weighted"=加权融合: 无条件按 cnn_weight 计入.
+    answers: 现场问卷(兼容保留, 传 None 即纯图像).
+    返回后验dict+top+risk+advice."""
     post = {h: 1.0 for h in HYP}  # 均匀先验
     evid = []
     if image_lik:
         for h in HYP:
             post[h] *= image_lik[h] ** image_weight
-        evid.append("图像水色")
+        evid.append("图像·水色CV(主)")
+    rule_top = max(image_lik or {h: 1.0 for h in HYP}, key=lambda h: (image_lik or {}).get(h, 0))
+    cnn_used = False
+    if cnn_lik:
+        cnn_top = max(cnn_lik, key=lambda h: cnn_lik[h])
+        if cnn_mode == "weighted" or (cnn_mode == "agree" and cnn_top == rule_top):
+            for h in HYP:
+                post[h] *= cnn_lik[h] ** cnn_weight
+            cnn_used = True
+            evid.append("图像·宏观CNN(辅助)")
+        else:
+            evid.append("图像·宏观CNN(提示不一致,未计入)")
     for q in QUESTIONS:
         lab = (answers or {}).get(q["id"])
         if not lab:
@@ -186,4 +346,6 @@ def fuse(image_lik=None, answers=None, image_weight=2.0):
         "risk": risk, "risk_note": risk_note, "advice": HYP_ADVICE[top],
         "alert": alert,
         "evidence": evid,
+        "cnn_used": cnn_used,
+        "cnn_top": max(cnn_lik, key=lambda h: cnn_lik[h]) if cnn_lik else None,
     }

@@ -1,0 +1,209 @@
+{
+  "n": 25,
+  "cnn_corr": 20,
+  "cnn_acc": 0.8,
+  "rule_corr": 23,
+  "rule_acc": 0.92,
+  "detail": [
+    {
+      "file": "warm_gbnoct_noctiluca_0000.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0014.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(diatom)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0015.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(toxic_dino)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0032.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(diatom)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0081.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0082.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->normal(none)",
+      "rule_ok": true,
+      "cnn_ok": false
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0086.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0110.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(toxic_dino)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0111.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(toxic_dino)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0112.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0113.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0114.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0122.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->normal(none)",
+      "rule_ok": true,
+      "cnn_ok": false
+    },
+    {
+      "file": "warm_gbnoct_noctiluca_0131.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_algae_FujianCoast_FIELD_02.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_algae_FujianCoast_FIELD_14.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_algae_Xiamen_2007_FIELD_01.jpg",
+      "true": "warm",
+      "rule": "rule->warm",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbif01_039041df.jpg",
+      "true": "warm",
+      "rule": "rule->normal",
+      "cnn": "cnn->warm(toxic_dino)",
+      "rule_ok": false,
+      "cnn_ok": true
+    },
+    {
+      "file": "warm_gbif14_a635a9a3.jpg",
+      "true": "warm",
+      "rule": "rule->normal",
+      "cnn": "cnn->warm(toxic_dino)",
+      "rule_ok": false,
+      "cnn_ok": true
+    },
+    {
+      "file": "normal_algae_Quanzhou_2017_FIELD_01.jpg",
+      "true": "normal",
+      "rule": "rule->normal",
+      "cnn": "cnn->normal(none)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "normal_gbnoct_noctiluca_0133.jpg",
+      "true": "normal",
+      "rule": "rule->normal",
+      "cnn": "cnn->warm(noctiluca)",
+      "rule_ok": true,
+      "cnn_ok": false
+    },
+    {
+      "file": "normal_gbnoct_noctiluca_0134.jpg",
+      "true": "normal",
+      "rule": "rule->normal",
+      "cnn": "cnn->warm(toxic_dino)",
+      "rule_ok": true,
+      "cnn_ok": false
+    },
+    {
+      "file": "green_algae_FujianCoast_FIELD_05.jpg",
+      "true": "green",
+      "rule": "rule->green",
+      "cnn": "cnn->green(green_tide)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "green_gbnoct_noctiluca_0098.jpg",
+      "true": "green",
+      "rule": "rule->green",
+      "cnn": "cnn->green(green_tide)",
+      "rule_ok": true,
+      "cnn_ok": true
+    },
+    {
+      "file": "green_gbnoct_noctiluca_0099.jpg",
+      "true": "green",
+      "rule": "rule->green",
+      "cnn": "cnn->warm(toxic_dino)",
+      "rule_ok": true,
+      "cnn_ok": false
+    }
+  ]
+}

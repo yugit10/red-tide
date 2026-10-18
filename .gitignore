@@ -40,3 +40,40 @@ submission/*.zip
 submission/stage/数据集/
 submission/stage/模型/
 tools/usage_history.jsonl
+
+# ===== 大数据目录(不入库; 保留其中的溯源csv/训练日志/class_map) =====
+_macro_dataset/
+_macro_scratch/
+_submission_assets/
+_roboflow_dl/
+_zenodo/
+_v4/
+_notice_pages/
+model_macro/
+model_precheck/
+
+# ===== 本地工具/缓存/临时(不入库) =====
+_pylibs/
+_modlens/
+_npm_cache/
+.cache/
+_acl_backups/
+_acl_recovery/
+UnRAR.exe
+license.txt
+_roboflow_key.txt
+*.html
+*.txt.tmp
+_dbgi.ps1
+
+# ===== 例外: 上述大数据目录中的溯源/配置/日志保留入库 =====
+!_macro_dataset/class_map.json
+!_macro_dataset/precheck/
+!_macro_scratch/web/provenance*.csv
+!_macro_scratch/nonsea/provenance_nonsea.csv
+!_submission_assets/macro/provenance_macro.csv
+!_submission_assets/macro/README.md
+!model_macro/
+!model_macro/*.json
+!model_precheck/
+!model_precheck/*.json

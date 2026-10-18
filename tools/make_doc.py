@@ -89,6 +89,27 @@ doc.add_paragraph("app.py:Streamlit 双 Tab 前端——宏观海面(上传+问�
 doc.add_paragraph("藻种知识库.xlsx:7 类的赤潮风险等级、生态特性、对养殖影响、毒素类型、爆发规律、监测优先级。",style="List Bullet")
 P("前端识别结果与知识库联动:识别出类别后,自动展示该类的风险等级(高/中—高/中/低—中/低)、毒素类型、生态特性、对养殖影响、爆发规律与监测优先级,使“识别”直接转化为“风险提示”。")
 
+H("5.1 模块接口定义",2)
+doc.add_paragraph("prepare_data.py → class_map.json / train/val 目录:输出类别映射 {order 索引 → slug},训练与推理共用同一映射;",style="List Bullet")
+doc.add_paragraph("train.py → best.ckpt + train_log.json:训练产出模型权重与训练曲线(每轮 train/val loss、val acc、best_val_acc);",style="List Bullet")
+doc.add_paragraph("predict.py(依赖 best.ckpt + class_map.json + 藻种知识库.xlsx):predict(image) → (类别, 置信度, Top-3),并联动知识库输出风险等级/毒素/生态影响/预警信号;",style="List Bullet")
+doc.add_paragraph("fusion.py 核心接口:image_color_likelihood(image) → (水色类别, 似然向量);questionnaire_likelihood(答案dict) → 问卷似然向量;fuse(image_likelihood, question_likelihood) → {假设: 后验概率} 并叠加四级预警(预警指数、等级、响应措施);",style="List Bullet")
+doc.add_paragraph("app.py:宏观 Tab 调用 fusion.*;显微 Tab 调用 predict.py 的推理函数;历史记录以 JSONL 追加写入 usage_history.jsonl(关页不丢);",style="List Bullet")
+doc.add_paragraph("融合扩展钩子:fusion.py 预留 image_cnn_likelihood() 接口,未来宏观图像 CNN 就绪后可作为第三路证据接入,无需改动融合主流程。",style="List Bullet")
+
+H("5.2 宏观 CNN 弱监督扩充(伪标签自训练)",2)
+P("面对宏观海面照片标注稀缺的问题,本版本引入弱监督自训练方法扩充宏观训练数据:从公开图片搜索获取约 3100 张海面实拍图(网页公开图,逐张记录来源 URL),使用上文可审计的规则流(水色CV)自动打五分类伪标签(夜光藻型/有毒甲藻型/硅藻型/绿潮/无赤潮),经 md5 去重与质量过滤(最小边≥200、字节≥4KB)后保留 3065 张;按 9:1 划分为训练集(2760)与伪标签监控集(305)。")
+P("诚实披露:伪标签监控集的准确率仅用于训练过程监控与早停选择,不作为最终准确率声明;宏观 CNN 的真实效果以另行人工精选的 25 张真实海面照片(warm/normal/green 三类口径)验证,并与规则流基线并列报告。")
+P("架构角色:宏观 CNN 训练完成后作为融合引擎的第三路图像证据(image_cnn_likelihood 钩子)接入,与水色CV、现场问卷并列,不改动既有融合主流程与四级预警阈值的可审计性。")
+P("验证结果(MobileNetV3-Small,10 epochs,冻结骨干仅训分类头):在 25 张人工精选真实海面照片上,宏观 CNN 三类口径准确率 80.0%(20/25),同期规则流基线为 92.0%(23/25);两者互补——CNN 正确识别了规则流漏判的 2 张暖色水华图(GBIF 采集记录),也提示了规则流受阈值影响的部分边界样本。该结果说明伪标签自训练产出的 CNN 可作为与规则流互补的第三路证据(暂不单独作为预警依据),预留 image_cnn_likelihood 钩子接入后,两路证据联合可提升宏观判定的鲁棒性。")
+
+H("5.3 数据结构说明",2)
+P("provenance.csv:slug(类别)、class_cn/class_sci(中文名/学名)、level(物种级/属级)、occurrence_key(GBIF 采集记录号)、record_scientificName(记录实际学名)、media_url(影像原始 URL)、license(许可)、rightsHolder(权利人)、file(本地文件名)、bytes(字节数)。")
+P("class_map.json:{\"classes\": [7 个类别 slug 有序列表], \"summary\": {slug: {raw, dedup, train, val}}, \"meta\": {slug: {cn, sci}}}。")
+P("train_log.json:{\"epochs\": [...], \"train_loss\": [], \"val_loss\": [], \"val_acc\": [], \"best_val_acc\": 0.954, ...}。")
+P("藻种知识库.xlsx:「藻种信息」sheet(7 类赤潮藻种的固有风险等级/生态特性/对养殖影响/毒素/爆发规律/监测优先级)、「宏观融合似然表」sheet(水色×问卷选项对各假设的显式似然权重)、「预警分级表」sheet(四级预警阈值与响应措施),三者均可审计、可维护。")
+P("usage_history.jsonl:每条为一次查询的快照 {时间戳, 分支, 输入摘要, 结论(预警等级/指数/类群), 关键证据}。")
+
 H("六、实验结果",1)
 _cm=ev['confusion']; _tot=sum(sum(r) for r in _cm); _cor=sum(_cm[i][i] for i in range(len(_cm))); _nc=len(_cm)
 P(f"在 {_tot} 张验证图像上,总体准确率为 {ev['overall_val_acc']*100:.2f}%({_cor}/{_tot}),全部 {_nc} 个类别均超过 80% 验收线;最佳单轮验证准确率 {log['best_val_acc']*100:.1f}%。")

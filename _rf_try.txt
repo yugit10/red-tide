@@ -1,0 +1,9 @@
+api v9 raw -> HTTP 200 | CT=application/json; charset=utf-8 | 1677 bytes | head: {"workspace":{"name":"Prowl TurdSwerve 2024","url":"prowl-turdswerve-2024"},"project":{"id
+
+api v9 coco -> HTTP 202 | CT=application/json; charset=utf-8 | 14 bytes | head: {"progress":0}
+
+api v9 yolo -> HTTP 202 | CT=application/json; charset=utf-8 | 14 bytes | head: {"progress":0}
+
+api v1 coco -> HTTP 200 | CT=application/json; charset=utf-8 | 1478 bytes | head: {"workspace":{"name":"Prowl TurdSwerve 2024","url":"prowl-turdswerve-2024"},"project":{"id
+
+api v9 folder -> HTTP 400 | {"error":"folder is an invalid format for project type object-detection. Please use one of: clip, coco, coco-mmdetection
