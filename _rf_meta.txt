@@ -1,0 +1,213 @@
+v9 raw: HTTP 200
+{
+ "workspace": {
+  "name": "Prowl TurdSwerve 2024",
+  "url": "prowl-turdswerve-2024"
+ },
+ "project": {
+  "id": "prowl-turdswerve-2024/red-tide",
+  "type": "object-detection",
+  "name": "Red Tide",
+  "created": 1736036390.298,
+  "updated": 1736863998.748,
+  "images": 1002,
+  "unannotated": 0,
+  "annotation": "algae",
+  "versions": 9,
+  "public": true,
+  "multilabel": false,
+  "license": "CC BY 4.0",
+  "splits": {
+   "train": 702,
+   "valid": 200,
+   "test": 100,
+   "export": 0
+  },
+  "colors": {
+   "algae": "#C7FC00",
+   "coral": "#8622FF"
+  },
+  "classes": {
+   "coral": 162,
+   "algae": 1240
+  },
+  "icon": {
+   "original": "https://source.roboflow.com/a2oXka48OwbXEma5KQ5QO8q4PXf1/7muSlAqcWKvheFiGQdC6/original.jpg",
+   "thumb": "https://source.roboflow.com/a2oXka48OwbXEma5KQ5QO8q4PXf1/7muSlAqcWKvheFiGQdC6/thumb.jpg",
+   "annotation": "https://source.roboflow.com/a2oXka48OwbXEma5KQ5QO8q4PXf1/7muSlAqcWKvheFiGQdC6/annotation-algae.png"
+  },
+  "preprocessing": {
+   "auto-orient": true,
+   "resize": {
+    "format": "Fit within",
+    "width": "640",
+    "height": "640"
+   },
+   "contrast": {
+    "type": "Contrast Stretching"
+   },
+   "tile": {
+    "rows": "3",
+    "columns": "3"
+   }
+  },
+  "augmentation": {
+   "image": {
+    "enabled": true,
+    "versions": 3
+   },
+   "rotate": {
+    "enabled": true,
+    "degrees": 6
+   },
+   "shear": {
+    "enabled": true,
+    "horizontal": 4,
+    "vertical": 4
+   }
+  }
+ },
+ "version": {
+  "id": "prowl-turdswerve-2024/red-tide/9",
+  "name": "2025-01-14 9:13am",
+  "created": 1736863998.748,
+  "images": 21645,
+  "splits": {
+   "valid": 1800,
+   "test": 900,
+   "train": 18945
+  },
+  "generating": false,
+  "progress": 1,
+  "preprocessing": {
+   "auto-orient": true,
+   "resize": {
+    "format": "Fit within",
+    "width": "640",
+    "height": "640"
+   },
+   "contrast": {
+    "type": "Contrast Stretching"
+   },
+   "tile": {
+    "rows": "3",
+    "columns": "3"
+   }
+  },
+  "augmentation": {
+   "image": {
+    "versions": 3
+   },
+   "rotate": {
+    "degrees": 6
+   },
+   "shear": {
+    "horizontal": 4,
+    "vertical": 4
+   }
+  },
+  "exports": [
+   "tensorflow",
+   "yolov12"
+  ],
+  "models": {},
+  "trainings": [],
+  "classes": []
+ }
+}
+
+v1 coco: HTTP 200
+{
+ "workspace": {
+  "name": "Prowl TurdSwerve 2024",
+  "url": "prowl-turdswerve-2024"
+ },
+ "project": {
+  "id": "prowl-turdswerve-2024/red-tide",
+  "type": "object-detection",
+  "name": "Red Tide",
+  "created": 1736036390.298,
+  "updated": 1736863998.748,
+  "images": 1002,
+  "unannotated": 0,
+  "annotation": "algae",
+  "versions": 9,
+  "public": true,
+  "license": "CC BY 4.0",
+  "splits": {
+   "train": 702,
+   "valid": 200,
+   "test": 100,
+   "export": 0
+  },
+  "colors": {
+   "algae": "#C7FC00",
+   "coral": "#8622FF"
+  },
+  "classes": {
+   "coral": 162,
+   "algae": 1240
+  },
+  "icon": {
+   "original": "https://source.roboflow.com/a2oXka48OwbXEma5KQ5QO8q4PXf1/7muSlAqcWKvheFiGQdC6/original.jpg",
+   "thumb": "https://source.roboflow.com/a2oXka48OwbXEma5KQ5QO8q4PXf1/7muSlAqcWKvheFiGQdC6/thumb.jpg",
+   "annotation": "https://source.roboflow.com/a2oXka48OwbXEma5KQ5QO8q4PXf1/7muSlAqcWKvheFiGQdC6/annotation-algae.png"
+  }
+ },
+ "version": {
+  "id": "prowl-turdswerve-2024/red-tide/1",
+  "name": "2025-01-04 8:11pm",
+  "created": 1736039469.328,
+  "images": 1512,
+  "splits": {
+   "valid": 126,
+   "test": 63,
+   "train": 1323
+  },
+  "preprocessing": {
+   "auto-orient": {
+    "enabled": true
+   },
+   "resize": {
+    "enabled": true,
+    "format": "Fit within",
+    "width": "640",
+    "height": "640"
+   },
+   "tile": {
+    "enabled": true,
+    "rows": "3",
+    "columns": "3"
+   },
+   "contrast": {
+    "enabled": true,
+    "type": "Contrast Stretching"
+   }
+  },
+  "augmentation": {
+   "image": {
+    "enabled": true,
+    "versions": 3
+   },
+   "rotate": {
+    "enabled": true,
+    "degrees": 6
+   },
+   "shear": {
+    "enabled": true,
+    "horizontal": 4,
+    "vertical": 4
+   }
+  },
+  "exports": [
+   "coco",
+   "tfrecord"
+  ]
+ },
+ "export": {
+  "format": "coco",
+  "link": "https://app.roboflow.com/ds/0pIOv56UBf?key=KjArvmueRW",
+  "size": 27.271409
+ },
+ "progress": 1
+}

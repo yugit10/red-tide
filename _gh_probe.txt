@@ -1,0 +1,7 @@
+== redtide-dataset 元信息 ==
+  Multimodal dataset for red tide (harmful algal bloom) prediction using satellite imagery and oceanographic time-series data, including preprocessing and metadata for reproducible research
+  语言: None | 大小KB: 239 | 更新: 2026-03-18T04:44:04Z
+  默认分支: main
+
+== 根目录 (branch=main) ==
+  tabular_data_3.0.csv                file

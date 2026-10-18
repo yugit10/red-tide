@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """app.py —— Streamlit 前端: 海洋微藻智能识别与赤潮风险提示工具(双分支)
-主分支: 宏观海面照片 → 水色CV似然 × 现场6题问卷 → 贝叶斯融合 → 致灾类群/风险/建议
+主分支: 宏观海面照片 → 图像双证据(规则流水色CV × 宏观CNN) → 贝叶斯融合 → 致灾类群/风险/建议
 次分支: 显微照片 → MobileNetV3-Small(MindSpore) 7类识别(实验室确认)
-v3(渔民可用性整改): 大白话三句话结论+语音播报+一键复制上报文案+定位附注+拍照示例+
-问卷口语化引导+历史查询记录+显微入口标注; 算法层(fusion/predict)零改动。
+v4(纯图像判定): 删除现场问卷, 宏观仅凭海面照片判定(规则流为主92%、宏观CNN为辅80%),
+大白话三句话结论+语音播报+一键复制上报文案+定位附注+拍照示例+历史查询记录。
 运行: streamlit run app.py
 """
 import os, io, json, glob, tempfile, datetime
@@ -15,17 +15,11 @@ st.set_page_config(page_title="赤潮快查 · 拍海面看风险", page_icon="�
 
 MODEL_DIR = r"D:\train\model"
 RAW = r"D:\train\dataset_raw\macro\raw"
-HIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "usage_history.jsonl")
+# 历史记录放到独立缓存目录(源码目录不落运行时文件; tools/ 下旧文件可能被锁)
+HIST_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".cache")
+os.makedirs(HIST_DIR, exist_ok=True)
+HIST = os.path.join(HIST_DIR, "usage_history.jsonl")
 
-# 问卷口语化显示文案(仅改展示, 不改 fusion 内部 id/label/似然)
-PLAIN_Q = {
-    "color": "1. 海水的颜色, 您看着更像哪种?",
-    "glow": "2. 夜里或用手搅水时, 见过蓝绿色的光吗?",
-    "mortality": "3. 这几天有没有死鱼、死虾蟹, 或贝类合不拢壳/开口异常?",
-    "floating": "4. 水面上漂着什么?",
-    "smell": "5. 海边闻着有什么味?",
-    "env": "6. 最近海边有没有这些事?(升温/暴雨后/施肥排污等)",
-}
 EXAMPLE_GOOD = os.path.join(RAW, "warm", "keep", "warm_algae_Xiamen_2007_FIELD_01.jpg")
 EXAMPLE_BAD = os.path.join(RAW, "warm", "drop_curated", "warm_gb2xphaeoc_164d5339.jpg")
 
@@ -100,8 +94,12 @@ document.getElementById("cp").onclick = function() {{
 
 
 def append_history(rec):
-    with open(HIST, "a", encoding="utf-8") as f:
-        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    """写一条查询历史。失败只提示不阻断(历史是辅助功能)."""
+    try:
+        with open(HIST, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[历史记录写入失败(不影响本页分析)] {e}")
 
 
 def load_history(n=5):
@@ -140,14 +138,14 @@ with st.sidebar:
     st.divider()
     st.write("**怎么用**")
     st.write("1. 点「拍海面查风险」, 传一张海面照片")
-    st.write("2. 六个问题想答就答, 不答也行")
+    st.write("2. 等几秒出结果(只看照片, 不用答任何问题)")
     st.write("3. 看橙色/红色牌子, 听语音, 需要上报就复制话术")
     st.divider()
     log = load_train_log()
     if log:
         st.caption(f"化验室显微识别准确率 {log.get('best_val_acc', 0) * 100:.1f}%(7类)")
     with st.expander("我给专家看的: 技术原理"):
-        st.write("- 宏观: 水色CV色块似然 × 现场6题问卷似然 → 贝叶斯融合后验(无需训练)")
+        st.write("- 宏观: 图像双证据贝叶斯融合——规则流水色CV(主,25张真实图验证92%) × 宏观CNN(辅,80%),纯照片判定、无需问卷")
         st.write("- 微观: MobileNetV3-Small / MindSpore, 7类, 验证集 "
                  f"{log.get('best_val_acc', 0) * 100:.1f}%" if log else "- 微观: 未训练")
         st.markdown("图像与判定依据均可公开溯源(GBIF等), 见 `provenance.csv`; "
@@ -180,17 +178,7 @@ with tab_macro:
             st.image(EXAMPLE_BAD, caption="❌ 这样拍错: 只拍藻团/礁石特写", use_container_width=True)
     ups = st.file_uploader("上传海面照片(可多张, 手机拍的就行)", type=["jpg", "jpeg", "png"],
                            accept_multiple_files=True, key="macro_up")
-    st.markdown("##### 海边六问(想答就答, 答得越多越准)")
-    st.caption("每题都可以不选; 拿不准就选「不确定」, 不会算错, 只是少一条线索。")
-    answers = {}
-    qcols = st.columns(2)
-    for i, q in enumerate(fusion.QUESTIONS):
-        with qcols[i % 2]:
-            labels = [o["label"] for o in q["options"]]
-            sel = st.selectbox(PLAIN_Q.get(q["id"], q["text"]), ["未选择"] + labels, key=f"q_{q['id']}")
-            answers[q["id"]] = None if sel == "未选择" else sel
-    n_ans = sum(1 for v in answers.values() if v)
-    st.caption(f"已答 {n_ans}/6 题。一题不答也能出结果(只看照片水色)。")
+    st.caption("只凭照片判断, 不用答任何问题; 多张一起传, 每张都出结论。")
 
     if not ups:
         st.info("👆 传一张海面照片, 马上出结果。")
@@ -198,11 +186,18 @@ with tab_macro:
 
     for uf in ups:
         img = Image.open(io.BytesIO(uf.getvalue())).convert("RGB")
+        is_sea, _src, _score, _detail = fusion.sea_precheck(img)
+        if not is_sea:
+            st.warning(f"《{uf.name}》看起来不像海面照片(预检:{_detail})。"
+                       "请站到岸边/船上, 拍一大片水面; 显微照片请走第二个页面。")
+            continue
         label, lik, meta = fusion.image_color_likelihood(img)
         if meta["sat"] < 0.10:
             st.warning(f"《{uf.name}》看着不像海面照片(颜色太淡, 像显微镜下拍的)。"
                        "请站到岸边/船上, 拍一大片水面; 显微照片请走第二个页面。")
-        res = fusion.fuse(lik, answers)
+            continue
+        cnn_ok, cnn_lik = fusion.image_cnn_likelihood(img)
+        res = fusion.fuse(lik, None, cnn_lik=cnn_lik)
         c1, c2 = st.columns([1, 2])
         with c1:
             st.image(img, caption=uf.name, use_container_width=True)
@@ -230,6 +225,9 @@ with tab_macro:
             st.progress(min(res["confidence"], 1.0))
             _top3 = sorted(res["posterior"].items(), key=lambda kv: -kv[1])[:3]
             st.caption("后验Top3:" + "、".join(f"{fusion.HYP_CN[h]} {p * 100:.1f}%" for h, p in _top3))
+            if res.get("cnn_used") is False and res.get("cnn_top"):
+                st.caption(f"💡 宏观CNN提示:{fusion.HYP_CN.get(res['cnn_top'], res['cnn_top'])}"
+                           "(与主判据不一致,按保守原则以规则流为准,未计入预警)")
             sec_head(2, "相关危害", "#ED7D31")
             st.markdown(res["risk_note"])
             sec_head(3, "严重性", "#C00000")
