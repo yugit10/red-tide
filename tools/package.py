@@ -20,6 +20,27 @@ import zipfile
 
 ROOT = r"D:\train"
 STEP = os.path.join(ROOT, "_docbuild", "stage_build")   # 全新目录, 避免旧残留文件覆盖失败
+
+
+# ---- 身份信息: 放本地文件 .identity.local(已 gitignore), 不写进代码 ----
+# 每行 key=value:
+#   school=某某大学
+#   leader=队长姓名
+#   phone=13800000000
+#   alias=别名1,别名2        # 额外要扫描掉的旧写法/昵称, 可选
+def _load_identity():
+    ident = {"school": "学校名称", "leader": "队长", "phone": "13800000000", "alias": ""}
+    path = os.path.join(ROOT, ".identity.local")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                k, sep, v = line.partition("=")
+                if sep and v.strip():
+                    ident[k.strip()] = v.strip()
+    return ident
+
+
+IDENT = _load_identity()
 STAGE = os.path.join(ROOT, "submission", "stage")
 TOOLS = os.path.join(ROOT, "tools")
 MAT = os.path.join(ROOT, "materials")
@@ -164,7 +185,12 @@ with open(os.path.join(STAGE, "演示说明.txt"), "w", encoding="utf-8") as f:
 
 # ---- 匿名扫描: 检查文本类文件是否含个人信息 ----
 # 手机号要求独立成串(前后非数字/小数点), 避免误命中训练日志里的浮点数(如 18495538046.5)
-PAT = re.compile(r"队长|队长|nick0000000|宁德师范|(?<![\d.])1[3-9]\d{9}(?![\d.])", re.I)
+_alias = [x.strip() for x in IDENT["alias"].split(",") if x.strip()]
+PAT = re.compile("|".join(
+    [re.escape(IDENT["school"]), re.escape(IDENT["leader"])]
+    + [re.escape(x) for x in _alias]
+    + [r"(?<![\d.])1[3-9]\d{9}(?![\d.])"]
+), re.I)
 hits = []
 for dp, _, fns in os.walk(STAGE):
     for fn in fns:
@@ -183,7 +209,7 @@ print("匿名扫描命中:", hits if hits else "无(通过)")
 # 同条要求"所有资料内容中均不得出现参赛选手信息", 由上方匿名扫描保障包内内容匿名。
 OUTDIR = os.path.join(ROOT, "submission")
 os.makedirs(OUTDIR, exist_ok=True)
-zipname = "学校名称-海洋微藻智能识别与赤潮风险提示工具-队长-13800000000.zip"
+zipname = "{school}-海洋微藻智能识别与赤潮风险提示工具-{leader}-{phone}.zip".format(**IDENT)
 zpath = os.path.join(OUTDIR, zipname)
 if os.path.exists(zpath):
     try:
