@@ -14,7 +14,7 @@ SPECIES = {
     'pseudo_nitzschia_pungens': ('Pseudo-nitzschia pungens', 2628756, 200),
 }
 ROOT = r'D:\train\dataset_raw\gbif'
-UA = {'User-Agent': 'train-edu-project/1.0 (student competition; contact: 200705023@qq.com)'}
+UA = {'User-Agent': 'train-edu-project/1.0'}
 OK_EXT = ('.jpg', '.jpeg', '.png', '.gif', '.webp')
 
 

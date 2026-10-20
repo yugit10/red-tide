@@ -20,8 +20,8 @@ HIST_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 os.makedirs(HIST_DIR, exist_ok=True)
 HIST = os.path.join(HIST_DIR, "usage_history.jsonl")
 
-EXAMPLE_GOOD = os.path.join(RAW, "warm", "keep", "warm_algae_Xiamen_2007_FIELD_01.jpg")
-EXAMPLE_BAD = os.path.join(RAW, "warm", "drop_curated", "warm_gb2xphaeoc_164d5339.jpg")
+EXAMPLE_GOOD = os.path.join(RAW, "warm", "keep", "warm_algae_FujianCoast_FIELD_14.jpg")
+EXAMPLE_BAD = os.path.join(RAW, "warm", "drop_curated", "warm_gb2xphaeoc_28a6fa59.jpg")
 
 
 def render_alert(a):
@@ -154,7 +154,9 @@ with st.sidebar:
         hs = load_history()
         if hs:
             for h in hs:
-                st.write(f"- {h['ts']}　{h['alert']}　{h['top_cn']}　({h['color_cn']})")
+                # 用 .get 兜底: 历史文件可能来自旧版本或损坏, 缺字段不应让整页崩溃
+                st.write(f"- {h.get('ts', '—')}　{h.get('alert', '—')}　"
+                         f"{h.get('top_cn', h.get('top', '—'))}　({h.get('color_cn', '—')})")
         else:
             st.write("还没有记录。查一次就记一次, 关掉也在。")
     st.caption("结果供参考, 以福建省海洋与渔业局官方通报为准。")
@@ -169,22 +171,55 @@ tab_macro, tab_micro = st.tabs(["📷 拍海面查风险(渔民用)", "🔬 显�
 # ================= 分支一: 宏观 =================
 with tab_macro:
     import fusion
+
+    def example_pair():
+        """示例图: 两张统一裁成 4:3 再显示, 避免横竖比例不同导致左右高度不对称."""
+        prob = None
+        try:
+            import numpy as np
+            from PIL import Image as _Img
+            ims = []
+            for path in (EXAMPLE_GOOD, EXAMPLE_BAD):
+                if not os.path.exists(path):
+                    return None
+                im = _Img.open(path).convert("RGB")
+                w, h = im.size
+                target = 4 / 3
+                if w / h > target:                       # 太宽: 从中间裁宽
+                    nw = int(h * target)
+                    left = (w - nw) // 2
+                    im = im.crop((left, 0, left + nw, h))
+                else:                                    # 太高: 从中间裁高
+                    nh = int(w / target)
+                    top = (h - nh) // 2
+                    im = im.crop((0, top, w, top + nh))
+                ims.append(im.resize((600, 450), _Img.LANCZOS))
+            return ims
+        except Exception:
+            return None
+
+    _pair = example_pair()
     gc, bc = st.columns(2)
-    with gc:
-        if os.path.exists(EXAMPLE_GOOD):
-            st.image(EXAMPLE_GOOD, caption="✅ 这样拍对: 拍一大片水面", use_container_width=True)
-    with bc:
-        if os.path.exists(EXAMPLE_BAD):
-            st.image(EXAMPLE_BAD, caption="❌ 这样拍错: 只拍藻团/礁石特写", use_container_width=True)
+    if _pair:
+        with gc:
+            st.image(_pair[0], caption="✅ 这样拍对: 拍一大片水面", use_container_width=True)
+        with bc:
+            st.image(_pair[1], caption="❌ 这样拍错: 只拍藻团/礁石特写", use_container_width=True)
+    else:
+        with gc:
+            if os.path.exists(EXAMPLE_GOOD):
+                st.image(EXAMPLE_GOOD, caption="✅ 这样拍对: 拍一大片水面", use_container_width=True)
+        with bc:
+            if os.path.exists(EXAMPLE_BAD):
+                st.image(EXAMPLE_BAD, caption="❌ 这样拍错: 只拍藻团/礁石特写", use_container_width=True)
     ups = st.file_uploader("上传海面照片(可多张, 手机拍的就行)", type=["jpg", "jpeg", "png"],
                            accept_multiple_files=True, key="macro_up")
     st.caption("只凭照片判断, 不用答任何问题; 多张一起传, 每张都出结论。")
 
     if not ups:
         st.info("👆 传一张海面照片, 马上出结果。")
-        st.stop()
 
-    for uf in ups:
+    for uf in (ups or []):
         img = Image.open(io.BytesIO(uf.getvalue())).convert("RGB")
         is_sea, _src, _score, _detail = fusion.sea_precheck(img)
         if not is_sea:
@@ -196,7 +231,7 @@ with tab_macro:
             st.warning(f"《{uf.name}》看着不像海面照片(颜色太淡, 像显微镜下拍的)。"
                        "请站到岸边/船上, 拍一大片水面; 显微照片请走第二个页面。")
             continue
-        cnn_ok, cnn_lik = fusion.image_cnn_likelihood(img)
+        cnn_lik = fusion.image_cnn_likelihood(img)[1]
         res = fusion.fuse(lik, None, cnn_lik=cnn_lik)
         c1, c2 = st.columns([1, 2])
         with c1:
@@ -217,9 +252,13 @@ with tab_macro:
                       f"研判{res['top_cn']}(把握{res['confidence'] * 100:.0f}%); "
                       f"预警{a['color_cn']}{a['level']}级, 指数{a['index']}/100; 请核实。")
             action_buttons(s1 + s2 + s3, report)
-            append_history({"ts": ts, "file": uf.name, "color_cn": meta["color_cn"],
-                            "top": res["top"], "top_cn": res["top_cn"],
-                            "alert": f"{a['color_cn']}{a['level']}级", "index": a["index"]})
+            # 去重: Streamlit 每次控件交互都会重跑脚本, 同一张图+同一结论只记一次
+            _sig = (uf.name, res["top"], a["index"])
+            if st.session_state.get("_last_hist_sig") != _sig:
+                st.session_state["_last_hist_sig"] = _sig
+                append_history({"ts": ts, "file": uf.name, "color_cn": meta["color_cn"],
+                                "top": res["top"], "top_cn": res["top_cn"],
+                                "alert": f"{a['color_cn']}{a['level']}级", "index": a["index"]})
             sec_head(1, "可能藻种")
             st.markdown(f"{res['top_cn']}　(融合置信度 {res['confidence'] * 100:.1f}%)")
             st.progress(min(res["confidence"], 1.0))
@@ -254,9 +293,16 @@ with tab_micro:
         for uf in mups:
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
             tmp.write(uf.getbuffer()); tmp.close()
-            img = Image.open(tmp).convert("RGB")
-            r = pred.predict(tmp, topk=3)
-            os.unlink(tmp)
+            tmp_path = tmp.name                       # 先取出路径: close() 之后对象不可再用
+            try:
+                img = Image.open(tmp_path).convert("RGB")
+                r = pred.predict(tmp_path, topk=3)
+            finally:
+                # 无论推理是否异常都清理临时文件
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
             top = r[0]
             c1, c2 = st.columns([1, 2])
             with c1:
