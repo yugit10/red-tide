@@ -1,4 +1,0 @@
-Zenodo 7359262: FAIL HTTPError: HTTP Error 403: Forbidden
-NSOAS FTP: FAIL error_perm: 530 Not logged in, password error.
-NCDC 藻华数据集: FAIL TimeoutError: timed out
-NODA 漂浮藻: OK HTTP 200 3232 bytes

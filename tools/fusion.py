@@ -334,7 +334,7 @@ def fuse(image_lik=None, answers=None, image_weight=2.0, cnn_lik=None, cnn_weigh
             continue
         for h in HYP:
             post[h] *= opt["lik"][h]
-        evid.append(q["text"].split(".")[0])
+        evid.append(q["text"].split(".")[0].split("、")[0].strip())
     tot = sum(post.values()) or 1.0
     post = {h: post[h] / tot for h in HYP}
     top = max(post, key=post.get)

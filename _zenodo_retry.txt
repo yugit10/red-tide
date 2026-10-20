@@ -1,4 +1,0 @@
-https://zenodo.org FAIL HTTPError: HTTP Error 403: Forbidden
-https://zenodo.org/api FAIL HTTPError: HTTP Error 403: Forbidden
-https://zenodo.org/records/7359262 FAIL HTTPError: HTTP Error 403: Forbidden
-files端点 FAIL: HTTP Error 403: Forbidden

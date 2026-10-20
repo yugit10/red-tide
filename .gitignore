@@ -77,3 +77,11 @@ _dbgi.ps1
 !model_macro/*.json
 !model_precheck/
 !model_precheck/*.json
+
+# ===== 文档构建与提交产物(不入库: 大文件/含个人信息/比赛提交包) =====
+_docbuild/
+_template/
+提交文档/
+DOCX_BACKUP_/
+_templates_dump.txt
+_content_素材.md
