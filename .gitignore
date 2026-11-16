@@ -86,3 +86,9 @@ _template/
 DOCX_BACKUP_/
 _templates_dump.txt
 _content_素材.md
+
+# ===== 一次性历史重写/探测产物(含明文或大模型,不入库) =====
+_rewrite_pii.py
+_onnx_probe/
+_final_notice/
+_anon_final_check.txt
