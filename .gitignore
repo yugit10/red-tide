@@ -92,3 +92,7 @@ _rewrite_pii.py
 _onnx_probe/
 _final_notice/
 _anon_final_check.txt
+
+# ===== 小程序模型(18MB ONNX,上传云存储,不入库) =====
+miniprogram/models/
+*.onnx

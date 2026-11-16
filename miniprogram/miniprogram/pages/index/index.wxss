@@ -1,0 +1,2 @@
+/* 页面级样式:沿用全局,少量补充 */
+.hint { font-size: 24rpx; color: #8A9AA8; margin-top: 12rpx; }

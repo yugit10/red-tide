@@ -1,0 +1,17 @@
+<view class="container">
+  <view class="card">
+    <view class="title">📋 我最近查过的</view>
+    <view class="sub">最近 20 条查询记录(保存在本机)</view>
+  </view>
+
+  <view wx:if="{{list.length === 0}}" class="card">
+    <view class="tip">还没有查询记录。去"海面拍照"或"显微识别"试一张吧。</view>
+  </view>
+
+  <view wx:for="{{list}}" wx:key="ts" class="card" bindtap="onItemTap" data-index="{{index}}">
+    <view style="font-weight:600;">{{item.type === 'sea' ? '🌊 海面' : '🔬 显微'}} · {{item.summary}}</view>
+    <view class="hint">{{item.ts}}</view>
+  </view>
+
+  <button wx:if="{{list.length > 0}}" class="btn-secondary" bindtap="onClear">🗑 清空记录</button>
+</view>

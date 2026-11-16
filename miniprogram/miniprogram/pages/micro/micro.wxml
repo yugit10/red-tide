@@ -1,0 +1,22 @@
+<view class="container">
+  <view class="card">
+    <view class="title">🔬 显微识别</view>
+    <view class="sub">上传显微镜下的藻类照片, 识别 7 类赤潮相关藻种, 给出风险提示。(化验室人员使用)</view>
+  </view>
+
+  <view class="card">
+    <block wx:if="{{imgPath}}">
+      <image class="preview" src="{{imgPath}}" mode="widthFix" />
+    </block>
+    <button class="btn-primary" bindtap="choosePhoto">📷 拍显微照 / 从相册选</button>
+    <button class="btn-primary" bindtap="startAnalyze" disabled="{{!imgPath || busy}}">
+      {{busy ? '识别中…' : (imgPath ? '🔬 开始识别' : '请先选择显微照片')}}
+    </button>
+    <view wx:if="{{status}}" class="tip" style="margin-top:16rpx;text-align:center;">{{status}}</view>
+    <view wx:if="{{err}}" class="tip" style="margin-top:16rpx;color:#C00000;">{{err}}</view>
+  </view>
+
+  <view class="card">
+    <view class="sub">💡 提示: 显微照片应为显微镜下拍摄的藻类图像; 海面照片请到"海面拍照"页。</view>
+  </view>
+</view>

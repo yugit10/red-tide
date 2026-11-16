@@ -1,0 +1,54 @@
+<view class="container" wx:if="{{r}}">
+
+  <!-- 海面结果 -->
+  <block wx:if="{{!isMicro}}">
+    <view class="card" style="border-left: 10rpx solid {{r.res.alert.color_hex}};">
+      <view class="sub">预警牌</view>
+      <view class="title" style="color:{{r.res.alert.color_hex}};">{{r.res.alert.color_cn}} {{r.res.alert.level}}级 · 指数 {{r.res.alert.index}}</view>
+      <view class="sub" style="margin-top:8rpx;">{{r.res.top_cn}} · 把握约{{r.res.confidence * 100}}成</view>
+      <view class="sub" style="margin-top:4rpx;">风险: {{r.res.risk}} — {{r.res.risk_note}}</view>
+    </view>
+
+    <view class="card">
+      <view style="font-weight:700;color:#0B3A5B;">三句话告诉您</view>
+      <view style="margin-top:12rpx;">① 情况: {{r.plain.s1}}</view>
+      <view style="margin-top:8rpx;">② 该干什么: {{r.plain.s2}}</view>
+      <view style="margin-top:8rpx;">③ 该找谁: {{r.plain.s3}}</view>
+    </view>
+
+    <view class="card">
+      <view class="sub">📋 上报话术</view>
+      <button class="btn-primary" bindtap="copyReport">📋 {{copied ? '已复制' : '复制上报话术'}}</button>
+      <view wx:if="{{location}}" class="hint">📍 位置已附上({{location}})</view>
+      <view wx:else class="hint">📍 未获取位置(不影响上报, 可在话术里手写地点)</view>
+    </view>
+
+    <view class="card">
+      <view class="sub" bindtap="toggleEvidence">🔍 我给专家看的(证据链) {{showEvidence ? '▲' : '▼'}}</view>
+      <view wx:if="{{showEvidence}}" style="margin-top:12rpx;">
+        <view class="hint">水色判定: {{r.rule.meta.color_cn}} (粉{{r.rule.meta.f_pink}} 褐{{r.rule.meta.f_brown}} 绿{{r.rule.meta.f_green}} 白{{r.rule.meta.f_foam}})</view>
+        <view class="hint" wx:for="{{r.res.evidence}}" wx:key="index">· {{item}}</view>
+        <view class="hint">预检海面概率: {{r.seaProb}}</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 显微结果 -->
+  <block wx:else>
+    <view class="card">
+      <view class="sub">显微识别结果</view>
+      <view class="title">{{r.micro.top.cn}}</view>
+      <view class="sub">置信度: {{r.micro.top.prob * 100}}%</view>
+      <view class="sub" style="margin-top:8rpx;">风险: {{r.micro.risk[0]}} — {{r.micro.risk[1]}}</view>
+    </view>
+    <view class="card">
+      <view class="sub">Top-3</view>
+      <view wx:for="{{r.micro.ranked}}" wx:key="cls" class="hint">· {{item.cn}} : {{item.prob * 100}}%</view>
+    </view>
+    <view class="card">
+      <button class="btn-primary" bindtap="copyReport">📋 复制结果</button>
+    </view>
+  </block>
+
+  <button class="btn-secondary" bindtap="back">← 返回再查一张</button>
+</view>
